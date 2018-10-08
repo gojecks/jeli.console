@@ -1,0 +1,27 @@
+{
+    "name": "jeli.console",
+    "version": "1.0.0",
+    "description": "Simple sandbox console developed with passion",
+    "main": "dist/jeli.console.js",
+    "scripts": {
+        "test": "npm run test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gojecks/jeli.console.git"
+    },
+    "keywords": [
+        "javascript",
+        "console",
+        "sandbox",
+        "frontend",
+        "JQL",
+        "JDB"
+    ],
+    "author": "Gojecks Joseph",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/gojecks/jeli.console/issues"
+    },
+    "homepage": "https://github.com/gojecks/jeli.console#readme"
+}
