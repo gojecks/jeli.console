@@ -12,9 +12,9 @@ npm i jeli.console
  ```
  
  ### options
- - events
- - sandboxId
- - multiLine
- - mode
- - enableHistory
- - styling
+ - `events:`
+ - `consoleId:`
+ - ``multiLine:``
+ - ``mode:``
+ - ``enableHistory:``
+ - ``styling:``
