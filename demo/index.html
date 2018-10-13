@@ -8,13 +8,17 @@
 
 <body>
     <h2>CONSOLE TEST BED</h2>
-    <div id="consoleArea"></div>
+    <button type="button" onclick="openConsole({})">Open</button>
+    <button type="button" onclick="openConsole({styling:{sticky:true}})">Open Sticky</button>
+    <button type="button" onclick="openConsole({styling:{sticky:true,overlay:true}})">Open with overlay</button>
+    <button type="button" onclick="openConsole({styling:{sticky:true,position:'bottomRight'}})">Open Position(bottom right)</button>
+    <button type="button" onclick="openConsole({mode:1, styling:{}})">Open Read Mode</button>
     <script>
-        var sandbox = new jconsole({
-            container: "#consoleArea",
-            mode: 2
-        });
-        sandbox.init();;
+        function openConsole(config) {
+            var sandbox = new jconsole(config);
+
+            sandbox.init();
+        }
     </script>
 </body>
 

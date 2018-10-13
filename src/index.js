@@ -21,14 +21,16 @@
     function JCONSOLE(definition) {
         var options = extend(true, {
             events: {},
-            sandboxId: "jeli-console",
+            consoleId: "jeli-console",
             multiLine: false,
             mode: 2,
             enableHistory: true,
+            useFrameSandBox: false,
             styling: {
-                height: "285px",
-                width: "640px"
-            }
+                sticky: false,
+                postion: "auto"
+            },
+            defaultCommand: ""
         }, definition);
 
         /**
@@ -38,19 +40,33 @@
             options.container = "body";
         }
 
+        if (!options.styling.width) {
+            options.styling.width = "640px";
+        }
+
+        if (!options.styling.height) {
+            options.styling.height = "285px";
+        }
+
         /**
          * resolve the container
          */
         var container = document.querySelector(options.container),
-            drawStyle = JCONSOLEStyling(options.sandboxId, options.styling),
+            _style = JCONSOLEStyling(options.consoleId, options.styling),
             _commandHandler = new jConsoleCommandHandler(),
             consoleArea,
             outputArea,
             inputContainer,
             inputArea,
+            overlay,
             jConsoleHistory;
+
         if (!container) {
             throw new Error('Dock yard not found for console');
+        }
+
+        if (container.querySelector('#' + options.consoleId)) {
+            throw new Error('Instance already exists');
         }
 
 
@@ -62,20 +78,37 @@
             /**
              * append the template
              */
-            consoleArea.setAttribute('id', options.sandboxId);
+            consoleArea.setAttribute('id', options.consoleId);
             outputArea.className = "output";
             inputContainer.className = "input";
             inputArea.setAttribute('rows', options.multiLine ? 4 : 1);
-            inputArea.setAttribute('placeholder', 'Type some command / javascript code');
+            inputArea.setAttribute('placeholder', 'Type some command / or :help to see commands');
             consoleArea.appendChild(outputArea);
 
             if (options.mode > 1) {
                 consoleArea.appendChild(inputContainer);
                 inputContainer.appendChild(inputArea);
                 inputArea.addEventListener('keydown', jConsoleInputEventListener, false);
-                container.appendChild(consoleArea);
+                /**
+                 * set default command only if defined
+                 */
+                if (options.defaultCommand) {
+                    inputArea.value = options.defaultCommand;
+                }
                 jConsoleHistory = new JConsoleHistoryHandler(inputArea);
                 inputArea.focus();
+            }
+
+            container.appendChild(consoleArea);
+
+
+            /**
+             * check if overlay is active
+             */
+            if (options.styling.overlay) {
+                overlay = document.createElement('div');
+                overlay.className = "overlay";
+                container.appendChild(overlay);
             }
         }
 
@@ -127,19 +160,37 @@
          * 
          * @param {*} query 
          */
+        function generateParam(query) {
+            var ret = {};
+            query.forEach(function(item) {
+                if (item) {
+                    var _item = item.split("="),
+                        value = parseInt(_item[1]);
+                    ret[_item[0]] = !isNaN(value) ? value : _item[1];
+                }
+            });
+
+            return ret;
+        }
+
+        /**
+         * 
+         * @param {*} query 
+         */
         function $performTask(query) {
-            var command = _commandHandler.get(query),
-                result;
+            var _query = query.replace(/\s/, '').split("--");
+            var command = _commandHandler.get(_query.shift());
             if (command) {
                 if (typeof command === "function") {
-                    command(writeToOutput);
+                    command(writeToOutput, generateParam(_query));
                 } else {
                     writeToOutput(command);
                 }
 
-            } else if (_commandHandler.external) {
-                commandHandler.external(writeToOutput);
+            } else if (_commandHandler.global) {
+                _commandHandler.global(query, writeToOutput);
             } else {
+                var result;
                 try {
                     /**
                      * evil eval
@@ -163,7 +214,7 @@
             if (type === "c") {
                 content = '<span class="command">' + message + '</span>\n';
             } else {
-                content = '<span class="prefix">» </span><span class="' + (typeof message) + '">' + message + '</span>\n';
+                content = '<span class="prefix">&raquo; </span><span class="' + (typeof message) + '">' + message + '</span>\n';
             }
 
             outputArea.innerHTML += content;
@@ -180,6 +231,35 @@
             }
         }
 
+        function _resizeFn(ev) {
+            _style.animate(consoleArea);
+        }
+
+        /**
+         * Destroy and clean up
+         */
+        function cleanUp() {
+            if (options.mode > 1) {
+                inputArea.removeEventListener('keydown', jConsoleInputEventListener);
+            }
+
+            if (options.styling.sticky) {
+                if (options.styling.overlay) {
+                    overlay.remove();
+                }
+                window.removeEventListener('resize', _resizeFn);
+            }
+
+            consoleArea.remove();
+            jConsoleHistory.clear();
+            _style.removeStyle();
+        }
+
+        /**
+         * bind window resizing
+         */
+        window.addEventListener('resize', _resizeFn);
+
         /**
          * register default commands
          */
@@ -189,23 +269,26 @@
                 jConsoleHistory.clear();
                 outputArea.innerHTML = "";
             })
-            .set(":whoami", "I am 'JCONSOLE' how may i help you?");
+            .set(":whoami", "I am 'JCONSOLE' how may i help you?")
+            .set(":help", "Commands: :whoami, clear\n use arrow up and down to navigate between history")
+            .set(':exit', function(writer, param) {
+                writer('destroying console, all history will be lost and window will be destoryed');
+                var _timer = setTimeout(function() {
+                    cleanUp();
+                }, param.timer || 1000);
+            });
 
 
         return {
-            setMessage: writeToOutput,
             init: function() {
-                drawStyle();
                 generateView();
+                _style.writeStyle()
+                    .animate(consoleArea);
                 triggerEvent('console.initialized', true);
             },
             instance: {
-                destroy: function() {
-                    if (options.mode > 1) {
-                        inputArea.removeEventListener('keydown');
-                    }
-                    consoleArea.remove();
-                },
+                writer: writeToOutput,
+                destroy: cleanUp,
                 /**
                  * Enable MultiLine
                  */
