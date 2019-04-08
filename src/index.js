@@ -19,7 +19,7 @@
      * 
      */
     function JCONSOLE(definition) {
-        var options = extend(true, {
+        var options = {
             events: {},
             consoleId: "jeli-console",
             multiLine: false,
@@ -30,8 +30,16 @@
                 sticky: false,
                 postion: "auto"
             },
-            defaultCommand: ""
-        }, definition);
+            defaultCommand: "",
+            addControl: false
+        };
+
+        /**
+         * extend the options
+         */
+        for (var prop in definition) {
+            options[prop] = definition[prop];
+        }
 
         /**
          * check if container is defined
@@ -51,7 +59,7 @@
         /**
          * resolve the container
          */
-        var container = document.querySelector(options.container),
+        var container = (typeof options.container === "string" ? document.querySelector(options.container) : options.container),
             _style = JCONSOLEStyling(options.consoleId, options.styling),
             _commandHandler = new jConsoleCommandHandler(),
             consoleArea,
@@ -97,6 +105,22 @@
                 }
                 jConsoleHistory = new JConsoleHistoryHandler(inputArea);
                 inputArea.focus();
+            }
+
+            if ((options.styling.sticky && options.mode <= 1) || options.addControl) {
+                var buttonContainer = document.createElement('div'),
+                    button = document.createElement('button');
+                buttonContainer.appendChild(button);
+                buttonContainer.setAttribute("id", "control-container");
+                button.type = "button";
+                button.setAttribute("id", "_close_btn_");
+                button.innerHTML = '<span> X </span>';
+                consoleArea.insertBefore(buttonContainer, outputArea);
+                button.addEventListener('click', function() {
+                    cleanUp();
+                });
+                buttonContainer = null;
+                button = null;
             }
 
             container.appendChild(consoleArea);
@@ -214,10 +238,16 @@
             if (type === "c") {
                 content = '<span class="command">' + message + '</span>\n';
             } else {
-                content = '<span class="prefix">&raquo; </span><span class="' + (typeof message) + '">' + message + '</span>\n';
+                content = '<span class="prefix">&raquo; </span>';
+                if (typeof message === 'object') {
+                    message = JSON.stringify(message, null, 3);
+                }
+                content += '<span class="' + (typeof message) + '">' + message + '</span>\n';
             }
 
             outputArea.innerHTML += content;
+            // autoscroll page
+            outputArea.scrollTop = outputArea.scrollHeight;
         }
 
         /**
@@ -251,7 +281,9 @@
             }
 
             consoleArea.remove();
-            jConsoleHistory.clear();
+            if (options.mode > 1) {
+                jConsoleHistory.clear();
+            }
             _style.removeStyle();
         }
 
