@@ -3,7 +3,7 @@ test:
 default:
   #clear and generate common libraries
   - 'clean:jDist'
-  - 'concat'
+  - 'jeli-template-loader'
   - 'uglify'
   - 'clean:jAfterBuild'
-  - 'watch'
+#  - 'watch'

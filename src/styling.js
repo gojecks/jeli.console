@@ -72,7 +72,7 @@ function JCONSOLEStyling(consoleId, config) {
         /**
          * check if sticky is defined
          */
-        if (config.sticky) {
+        if (config.sticky && consoleArea) {
             var _getStyle = getComputedStyle(consoleArea),
                 marginTop = _getStyle('margin-top'),
                 marginBottom = _getStyle('margin-bottom'),
